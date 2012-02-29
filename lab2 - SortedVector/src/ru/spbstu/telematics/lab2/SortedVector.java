@@ -2,13 +2,13 @@ package ru.spbstu.telematics.lab2;
 
 import java.io.*;
 
-public class SortedVector implements ISortedVector{
+public class SortedVector<T extends Comparable<T>> implements ISortedVector<T>{
 	
-	private Comparable _arr[];
+	private T[] _arr;
 	private int _size = 0;
 	
 	SortedVector(int size){
-		_arr = new Comparable[size];
+		_arr = (T[]) new Comparable[size];
 	}
 
 	public void show(){
@@ -26,7 +26,7 @@ public class SortedVector implements ISortedVector{
 	}
 	
 	@Override
-	public void add(Comparable o) {
+	public void add(T o){//Comparable o) {
 
 		System.out.print("\nAdd in vector: " + o + "\n");
 		
@@ -48,7 +48,7 @@ public class SortedVector implements ISortedVector{
 			
 			System.out.print("\nResizing vector to " + (_arr.length*2) + " (from " + _arr.length + ")\n");
 			
-			Comparable arr[] = new Comparable[(_arr.length*2)];
+			T[] arr = (T[]) new Comparable[(_arr.length*2)];
 			
 			for(j = 0; j < _size; j++)
 				arr[j] = _arr[j];
@@ -86,7 +86,7 @@ public class SortedVector implements ISortedVector{
 			
 			System.out.print("\nResizing vector to " + (_arr.length/2) + " (from " + _arr.length + ")\n");
 			
-			Comparable arr[] = new Comparable[(_arr.length/2)];
+			T arr[] = (T[]) new Comparable[(_arr.length/2)];
 			
 			for(int i = 0; i < _size; i++)
 				arr[i] = _arr[i];
@@ -98,14 +98,12 @@ public class SortedVector implements ISortedVector{
 	}
 
 	@Override
-	public Comparable get(int index) {
+	public T get(int index) {
 		
 		System.out.print("\nGetting vector element with index: " + index + "\n");
 		
 		if((index > _size) || (index <= 0)){
 			
-			//System.out.print("\nNo element with such index in vector...\n");
-			//return null;
 			throw new IndexOutOfBoundsException("Element with given index does not exist");
 		
 		}
@@ -115,7 +113,7 @@ public class SortedVector implements ISortedVector{
 	}
 
 	@Override
-	public int indexOf(Comparable o) {
+	public int indexOf(T o) {
 		
 		System.out.print("\nSearching in vector for element: \"" + o.toString() + "\" ...\n");
 		
@@ -139,9 +137,9 @@ public class SortedVector implements ISortedVector{
 		
 		System.out.println("Main Start\n");
 		
-		SortedVector vec = new SortedVector(10);
+		SortedVector<String> vec = new SortedVector<String>(10);
 		
-		Comparable o1 = "abc";
+		String o1 = "abc";
 		
 		vec.show();
 		
@@ -149,13 +147,13 @@ public class SortedVector implements ISortedVector{
 		
 		vec.show();
 		
-		Comparable o2 = "ghi";
+		String o2 = "ghi";
 		
 		vec.add(o2);
 		
 		vec.show();
 		
-		Comparable o3 = "def";
+		String o3 = "def";
 		
 		vec.add(o3);
 		
@@ -169,42 +167,45 @@ public class SortedVector implements ISortedVector{
 		
 		vec.show();
 		
-		Comparable o4 = "qwe";
+		String o4 = "qwe";
 		
 		vec.add(o4);
 		
 		vec.show();
 		
-		Comparable o5 = "rty";
+		String o5 = "rty";
 		
 		vec.add(o5);
 		
 		vec.show();
 		
-		Comparable o6 = "uio";
+		String o6 = "uio";
 		
 		vec.add(o6);
 		
 		vec.show();
 		
-		Comparable o1_ret = vec.get(2);
-		
-		if(o1_ret != null)
-			System.out.print("\nGot [" + 2 + "] element: \"" + o1_ret.toString() + "\"\n");
 		try{
-			Comparable o2_ret = vec.get(0);
+			String o1_ret = vec.get(2);
+		}
+		catch(IndexOutOfBoundsException exception){
+			System.out.print("\nGot exception: \"" + exception.getMessage() + "\"\n");
+		}
+		
+		try{
+			String o2_ret = vec.get(0);
 		}		
 		catch(IndexOutOfBoundsException exception){
 			System.out.print("\nGot exception: \"" + exception.getMessage() + "\"\n");
 		}
 		
-		Comparable o1_ind = "qwe";
+		String o1_ind = "qwe";
 		int index1 = vec.indexOf(o1_ind);
 		
 		if(index1 > 0)
 			System.out.print("\nIndex of element \"" + o1_ind.toString() + "\" is: " + index1 + "\n");
 		
-		Comparable o2_ind = "abc";
+		String o2_ind = "abc";
 		int index2 = vec.indexOf(o2_ind);
 		
 		if(index2 > 0)
