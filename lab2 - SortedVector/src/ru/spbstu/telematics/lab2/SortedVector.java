@@ -1,12 +1,17 @@
 package ru.spbstu.telematics.lab2;
 
 import java.io.*;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
-public class SortedVector<T extends Comparable<T>> implements ISortedVector<T>{
+public class SortedVector<T extends Comparable<T>> implements ISortedVector<T>, Iterable<T>, Iterator<T>{
 	
 	private T[] _arr;
 	private int _size = 0;
 	
+	private int _count = 0;
+	
+	@SuppressWarnings("unchecked")
 	SortedVector(int size){
 		_arr = (T[]) new Comparable[size];
 	}
@@ -16,10 +21,10 @@ public class SortedVector<T extends Comparable<T>> implements ISortedVector<T>{
 		if(_size > 0)
 			System.out.println("\n\nIn vector: ");
 		else
-			System.out.println("\nNothing in vector...");
+			System.out.println("\n\tNothing in vector...");
 		
 		for(int i = 0; i < _size; i++){
-			System.out.print((i+1) + ") " + _arr[i].toString() + "\n");
+			System.out.print("\t" + (i+1) + ") " + _arr[i].toString() + "\n");
 		}
 		
 		System.out.println("\n");
@@ -42,12 +47,13 @@ public class SortedVector<T extends Comparable<T>> implements ISortedVector<T>{
 		_size++;
 		
 		
-		System.out.print("\nVector size: " + _size + " (" + _arr.length + ")\n");
+		System.out.print("\n\t\tVector size: " + _size + " (" + _arr.length + ")\n");
 		
 		if(_arr.length == _size){	// If no empty space
 			
-			System.out.print("\nResizing vector to " + (_arr.length*2) + " (from " + _arr.length + ")\n");
+			System.out.print("\n\t\tResizing vector to " + (_arr.length*2) + " (from " + _arr.length + ")\n");
 			
+			@SuppressWarnings("unchecked")
 			T[] arr = (T[]) new Comparable[(_arr.length*2)];
 			
 			for(j = 0; j < _size; j++)
@@ -66,7 +72,7 @@ public class SortedVector<T extends Comparable<T>> implements ISortedVector<T>{
 		
 		if((index > _size) || (index <= 0)){
 			
-			System.out.print("\nNo element with such index in vector: " + index + "\n");
+			System.out.print("\n\tNo element with such index in vector: " + index + "\n");
 			return;
 		
 		}
@@ -80,12 +86,13 @@ public class SortedVector<T extends Comparable<T>> implements ISortedVector<T>{
 		_size--;
 		
 		
-		System.out.print("\nVector size: " + _size + " (" + _arr.length + ")\n");
+		System.out.print("\n\t\tVector size: " + _size + " (" + _arr.length + ")\n");
 		
 		if((_arr.length)/4 <= _size){	// If 1/4 full only
 			
-			System.out.print("\nResizing vector to " + (_arr.length/2) + " (from " + _arr.length + ")\n");
+			System.out.print("\n\t\tResizing vector to " + (_arr.length/2) + " (from " + _arr.length + ")\n");
 			
+			@SuppressWarnings("unchecked")
 			T arr[] = (T[]) new Comparable[(_arr.length/2)];
 			
 			for(int i = 0; i < _size; i++)
@@ -124,10 +131,37 @@ public class SortedVector<T extends Comparable<T>> implements ISortedVector<T>{
 			
 		}
 		
-		System.out.print("\nNo such element in vector...\n");
+		System.out.print("\n\tNo such element in vector...\n");
 		
 		return -1;
 		
+	}
+	
+
+	@Override
+	public boolean hasNext() {
+		if(_count < _size) return true; 
+		return false;
+	}
+
+	@Override
+	public T next() {
+		if(_count == _size) 
+			throw new NoSuchElementException(); 
+
+			_count++; 
+			return _arr[(_count-1)];
+	}
+
+	@Override
+	public void remove() {
+		//throw new UnsupportedOperationException();
+		remove(_count);
+	}
+
+	@Override
+	public Iterator<T> iterator() {
+		return this;
 	}
 	
 	/**
@@ -186,31 +220,34 @@ public class SortedVector<T extends Comparable<T>> implements ISortedVector<T>{
 		vec.show();
 		
 		try{
-			String o1_ret = vec.get(2);
+			System.out.print("\n\tGot: \"" + vec.get(2) + "\"\n");
 		}
 		catch(IndexOutOfBoundsException exception){
-			System.out.print("\nGot exception: \"" + exception.getMessage() + "\"\n");
+			System.out.print("\n\tGot exception: \"" + exception.getMessage() + "\"\n");
 		}
 		
 		try{
-			String o2_ret = vec.get(0);
+			System.out.print("\n\tGot: \"" + vec.get(0) + "\"\n");
 		}		
 		catch(IndexOutOfBoundsException exception){
-			System.out.print("\nGot exception: \"" + exception.getMessage() + "\"\n");
+			System.out.print("\n\tGot exception: \"" + exception.getMessage() + "\"\n");
 		}
 		
 		String o1_ind = "qwe";
 		int index1 = vec.indexOf(o1_ind);
 		
 		if(index1 > 0)
-			System.out.print("\nIndex of element \"" + o1_ind.toString() + "\" is: " + index1 + "\n");
+			System.out.print("\n\tIndex of element \"" + o1_ind.toString() + "\" is: " + index1 + "\n");
 		
 		String o2_ind = "abc";
 		int index2 = vec.indexOf(o2_ind);
 		
 		if(index2 > 0)
-			System.out.print("\nIndex of element \"" + o2_ind.toString() + "\" is: " + index2 + "\n");
+			System.out.print("\n\tIndex of element \"" + o2_ind.toString() + "\" is: " + index2 + "\n");
 		
+		System.out.println("\nfor-each:");
+		for(String str : vec)
+			System.out.print("\t\"" + str + "\"\n");
 		
 		System.out.println("\nMain End");
 		
