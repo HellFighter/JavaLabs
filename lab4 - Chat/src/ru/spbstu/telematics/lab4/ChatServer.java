@@ -4,8 +4,6 @@
 package ru.spbstu.telematics.lab4;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -45,7 +43,7 @@ public class ChatServer {
 			}
 		}
 	}
-
+	
 	private void serve(Client client) {
 
 		Message firstMsg = null;
@@ -63,14 +61,7 @@ public class ChatServer {
 				_activityTable.add(client);
 				System.out.println(firstMsg);
 			
-//				sendToAll(firstMsg);
-				System.out.println("...sending message back...");
-				try {
-					client.getObjectOutputStream().writeObject(firstMsg);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.out.println("Error writing object!");
-				}
+				sendToAll(firstMsg);
 
 			}
 			else{
@@ -100,6 +91,8 @@ public class ChatServer {
 				System.out.println("Error reading object!");
 			}
 			
+			boolean brk = false;
+			
 			switch(msg.getType()){
 			
 				case 0:	//chat message
@@ -114,26 +107,29 @@ public class ChatServer {
 					
 					System.out.println(msg.getLogin() + " already logged in!");
 					Message ntfyMsg = new Message(0, "Notyfication!", "Yiu are already logged in!");
-				try {
-					client.getObjectOutputStream().writeObject(ntfyMsg);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.out.println("Error writing object!");
-				}
+					
+					try {
+						client.getObjectOutputStream().writeObject(ntfyMsg);
+					} catch (IOException e) {
+						e.printStackTrace();
+						System.out.println("Error writing object!");
+					}
 										
 					break;
 					
-				case 2:
+				case 2:	//Logout message
 					
 					System.out.println(msg);
 					
 					sendToAll(msg);
 					
-					_activityTable.remove(client);
+					System.out.println("removing: " + _activityTable.remove(client));
+					
+					brk = true;
 					
 					break;
 					
-				default:	//invalid message type
+				default:	//Invalid message type
 					
 					System.out.println(msg);
 					Message errorMsg = new Message(0, "Error!", "Invalid message type!");
@@ -146,7 +142,10 @@ public class ChatServer {
 					
 					break;
 				
-			}	
+			}
+			
+			if(brk)
+				break;
 			
 		}
 		
@@ -172,7 +171,6 @@ public class ChatServer {
 			final Socket clientSocket = serverSocket.accept();
 			System.out.println("Connected: client port=" + clientSocket.getPort());
 			final Client client = new Client(clientSocket);
-			client.getObjectOutputStream().writeObject(new Message(0, "Hell", "123"));
 			server.getPool().submit(
 					new Runnable() {
 
@@ -182,8 +180,8 @@ public class ChatServer {
 							try {
 								server.serve(client);
 							} catch (Exception e) {
-								server._activityTable.remove(client);
 								e.printStackTrace();
+								server._activityTable.remove(client);
 							}
 							
 						} //run

@@ -3,20 +3,16 @@
  */
 package ru.spbstu.telematics.lab4;
 
-import java.awt.AWTEvent;
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -27,21 +23,11 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
-import sun.security.action.GetLongAction;
-
 /**
  * @author HellFighter
  *
  */
 public class ChatClient {
-
-	/**
-	 * 
-	 */
-	public ChatClient() {
-		// TODO Auto-generated constructor stub
-	}
-
 	
 	class Handler{
 		
@@ -50,10 +36,12 @@ public class ChatClient {
 		private ObjectInputStream _ois;
 		private String _name;
 		private boolean _loggedIn;
+		private boolean _loginSent;
 		
 		public Handler() {
 			_name = null;
 			_loggedIn = false;
+			_loginSent = false;
 		}
 		
 		/**
@@ -97,6 +85,7 @@ public class ChatClient {
 			}
 			
 			_name = login;
+			_loginSent = true;
 			
 			return "Login request sent...";
 		}
@@ -109,14 +98,7 @@ public class ChatClient {
 				e.printStackTrace();
 				return "Error sending message to server. Connection troubles.";
 			}
-			
-			/*try {
-				_socket.close();		//???????????????????????????????????? Дожидаться ответа???
-			} catch (IOException e) {
-				e.printStackTrace();
-				return "Error disconnectimg. Connection troubles.";
-			}*/
-			
+						
 			return "Logout request sent...";
 		}
 		
@@ -125,54 +107,54 @@ public class ChatClient {
 			Message msg = null;
 
 			try {
+				while(!_loginSent){}
 				msg = (Message)_ois.readObject();
 			} catch (ClassNotFoundException | IOException e) {
 				e.printStackTrace();
 				return "Error reading server message!";
 			}
 			
-			return "OK";
+			if(msg.getType() == 1 && msg.getLogin().compareTo(_name) == 0) {
+				setLoggedIn(true);
+			}
 			
-//			if(msg.getType() == 1 && msg.getLogin().compareTo(_name) == 0)
-//				setLoggedIn(true);
-//			
-//			if(msg.getType() == 2 && msg.getLogin().compareTo(_name) == 0) {
-//				
-//				setLoggedIn(false);
-//				
-//				try {
-//					_socket.close();
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//					return msg.toString() + "\nError disconnecting. Connection troubles.";
-//				}
-//				
-//			}
-//			
-////			if(isLoggedIn())
-//				return msg.toString();
-//			else
-//				return null;
+			if(msg.getType() == 2 && msg.getLogin().compareTo(_name) == 0) {
+				
+				setLoggedIn(false);
+				_loginSent = false;
+				
+				try {
+					_socket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+					return msg.toString() + "\nError disconnecting. Connection troubles.";
+				}
+				
+			}
+			
+			return msg.toString();
 		}
 		
 		public String sendMessage(String msgText) {
 			
 			if(isLoggedIn()){
-				Message msg = new Message(0, _name, msgText);
-				
-				try {
-					_oos.writeObject(msg);
-				} catch (IOException e) {
-					e.printStackTrace();
-					return "Error sending message! Connection troubles!";
+				if("".compareTo(msgText) != 0){
+					Message msg = new Message(0, _name, msgText);
+					
+					try {
+						_oos.writeObject(msg);
+					} catch (IOException e) {
+						e.printStackTrace();
+						return "Error sending message! Connection troubles!";
+					}
 				}
 			}
 			else
 				return "You are not logged in!";
 			
-			return null;
+			return "";
 		}
-		
+
 	}
 	
 	
@@ -222,7 +204,10 @@ public class ChatClient {
 		    sendButton.addActionListener(new ActionListener() {
 		    	@Override
 		    	public void actionPerformed(ActionEvent e) {
-		    		chatArea.append( _hndlr.sendMessage(inputField.getText()) + "\n" );
+		    		String snd = _hndlr.sendMessage(inputField.getText());
+		    		if("".compareTo(snd) != 0){
+			    		chatArea.append( snd + "\n" );
+		    		}
 		    		inputField.setText(null);
 		    	}
 		    });
@@ -236,29 +221,8 @@ public class ChatClient {
 		    	public void actionPerformed(ActionEvent e) {
 		    		if( !(_hndlr.isLoggedIn()) ) {
 		    			chatArea.append( _hndlr.login(usernameField.getText(), new String(passwordField.getPassword())) + "\n" );
-		    			if(_hndlr.isLoggedIn()){
-		    				EventQueue.invokeLater(new Runnable() {
-		    					@Override
-		    					public void run() {
-		    						logInOut.setText("Logout");
-		    					}
-		    				});
-		    				sendButton.setEnabled(true);
-		    			}
-		    			
 		    		} else {
 		    			chatArea.append( _hndlr.logout() + "\n" );
-		    			
-		    			if(!(_hndlr.isLoggedIn())){
-		    				EventQueue.invokeLater(new Runnable() {
-		    					@Override
-		    					public void run() {
-		    						logInOut.setText("Login");
-		    					}
-		    				});
-		    				sendButton.setEnabled(false);
-		    			}
-		    			
 		    		}
 		    	}
 		    });
@@ -269,9 +233,32 @@ public class ChatClient {
 				@Override
 				public void run() {
 					while(true) {
-//						if( _hndlr.isLoggedIn() ) {
-							chatArea.append( _hndlr.receiveMessage() + "\n" );
-//						}
+						
+						boolean oldL = _hndlr.isLoggedIn();
+						
+						chatArea.append( _hndlr.receiveMessage() + "\n" );
+						
+						boolean newL = _hndlr.isLoggedIn();
+						if(oldL != newL){
+							if(_hndlr.isLoggedIn()){
+			    				EventQueue.invokeLater(new Runnable() {
+			    					@Override
+			    					public void run() {
+			    						logInOut.setText("Logout");
+			    						sendButton.setEnabled(true);
+			    					}
+			    				});
+			    			}
+			    			else{
+			    				EventQueue.invokeLater(new Runnable() {
+			    					@Override
+			    					public void run() {
+			    						logInOut.setText("Login");
+			    						sendButton.setEnabled(false);
+			    					}
+			    				});
+			    			}
+						}
 					}
 				}
 			}).start();
@@ -286,33 +273,6 @@ public class ChatClient {
 	 */
 	public static void main(String[] args) throws IOException {
 		
-		
-		/*Socket s = new Socket();
-		s.connect(new InetSocketAddress("192.168.1.3", 12345));
-
-		ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
-		ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
-
-		Message msg = null;
-		try {
-			msg = (Message)ois.readObject();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println(msg);*/
-		/*Message msg = new Message(1, "Artem", "qwerty");
-		oos.writeObject(msg);
-
-		Message msg1 = new Message(0, "Artem", "Hi!");
-		oos.writeObject(msg1);
-
-		Message msg2 = new Message(3, "Artem", "Hey yall!!");
-		oos.writeObject(msg2);
-
-		Message msg3 = new Message(2, "Artem", "qwertyuiop");
-		oos.writeObject(msg3);*/
-		
 		final Handler hndlr = (new ChatClient()).new Handler();
 
 		EventQueue.invokeLater(new Runnable() {
@@ -323,8 +283,6 @@ public class ChatClient {
 				chatFrame.setVisible(true);
 			}
 		});
-				
-//		System.out.println(msg.toString());
 		
 	}
 

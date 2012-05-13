@@ -18,7 +18,6 @@ public class Client {
 	Socket _socket;
 	ObjectInputStream _ois;
 	ObjectOutputStream _oos;
-	String _name;					//?????????????
 
 	/**
 	 * @throws IOException 
@@ -35,20 +34,6 @@ public class Client {
 		}
 	}
 	
-	/**
-	 * @return the _name
-	 */
-	public String getName() {
-		return _name;
-	}
-
-	/**
-	 * @param _name the _name to set
-	 */
-	public void setName(String name) {
-		this._name = name;
-	}
-
 	public InetAddress getIP(){
 		return _socket.getInetAddress();
 	}
@@ -70,13 +55,9 @@ public class Client {
 		
 		Client tmp = (Client)obj;
 		
-//		if(getIP().equals(tmp.getIP())) {
 			if(getPort() == tmp.getPort()) {
-				if(tmp.getName().compareTo(getName()) == 0) {
-					return true;
-				}
+				return true;
 			}
-//		}
 		
 		return false;
 	}
