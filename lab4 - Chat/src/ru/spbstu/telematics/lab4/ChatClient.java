@@ -29,19 +29,30 @@ import javax.swing.SwingConstants;
  */
 public class ChatClient {
 	
+	private String _ip = "192.168.1.3";
+	private int _port = 12345;
+	
 	class Handler{
 		
 		private Socket _socket;
+		private Object _socketMutex;
 		private ObjectOutputStream _oos;
+		private Object _outMutex;
 		private ObjectInputStream _ois;
+		private Object _inMutex;
 		private String _name;
 		private boolean _loggedIn;
 		private boolean _loginSent;
 		
+
 		public Handler() {
 			_name = null;
 			_loggedIn = false;
 			_loginSent = false;
+//			_socket = new Socket();
+			_socketMutex = new Object();
+			_outMutex = new Object();
+			_inMutex = new Object();
 		}
 		
 		/**
@@ -58,48 +69,99 @@ public class ChatClient {
 			this._loggedIn = loggedIn;
 		}
 
+		/**
+		 * @return the _name
+		 */
+		public synchronized String getName() {
+			return _name;
+		}
+
+		/**
+		 * @param _name the _name to set
+		 */
+		public synchronized void setName(String name) {
+			this._name = name;
+		}
+
+		/**
+		 * @return the _loginSent
+		 */
+		public synchronized boolean isLoginSent() {
+			return _loginSent;
+		}
+		
+		/**
+		 * @param _loginSent the _loginSent to set
+		 */
+		public synchronized void setLoginSent(boolean loginSent) {
+			this._loginSent = loginSent;
+		}
+		
+		public void connect(String addr, int port) throws IOException{
+			synchronized (_socketMutex) {
+				_socket = new Socket();
+				_socket.connect(new InetSocketAddress(addr, port));
+				_oos = new ObjectOutputStream(_socket.getOutputStream());
+				_ois = new ObjectInputStream(_socket.getInputStream());
+			}
+		}
+		
+		public void disconnect() throws IOException{
+			synchronized (_socketMutex) {
+				_socket.close();
+			}
+		}
+		
+		public void writeObject(Message msg) throws IOException{
+			synchronized (_outMutex){
+				if(_oos != null)
+					_oos.writeObject(msg);
+			}
+		}
+		
+		public Message readObject() throws ClassNotFoundException, IOException{
+			synchronized(_inMutex){
+				return (Message)_ois.readObject();
+			}
+		}
+		
 		public String login (String login, String password) {
 			
-			_socket = new Socket();
-			
 			try {
-				_socket.connect(new InetSocketAddress("192.168.1.3", 12345));
+				connect(_ip, _port);
 			} catch (IOException e) {
 				e.printStackTrace();
-				return "Can't connect to server!";
+				return "Can't connect to server or get IO stream!";
 			}
 
 			try {
-				_oos = new ObjectOutputStream(_socket.getOutputStream());
-				_ois = new ObjectInputStream(_socket.getInputStream());
-			} catch (IOException e) {
-				e.printStackTrace();
-				return "Can't get IO stream!";
-			}
-			
-			try {
-				_oos.writeObject(new Message(1, login, password));
+				writeObject(new Message(1, login, password));
 			} catch (IOException e) {
 				e.printStackTrace();
 				return "Error sending message to server. Connection troubles.";
 			}
 			
-			_name = login;
-			_loginSent = true;
+			setName(login);
+			setLoginSent(true);
 			
 			return "Login request sent...";
 		}
 		
 		public String logout() {
 			
-			try {
-				_oos.writeObject(new Message(2, _name, ""));
-			} catch (IOException e) {
-				e.printStackTrace();
-				return "Error sending message to server. Connection troubles.";
+			if(isLoggedIn()){
+				try {
+					writeObject(new Message(2, getName(), ""));
+				} catch (IOException e) {
+					e.printStackTrace();
+					return "Error sending message to server. Connection troubles.";
+				}
+				
+				return "Logout request sent...";
 			}
+			else
+				return "Not logged in!!!";
 						
-			return "Logout request sent...";
 		}
 		
 		public String receiveMessage() {
@@ -107,24 +169,24 @@ public class ChatClient {
 			Message msg = null;
 
 			try {
-				while(!_loginSent){}
-				msg = (Message)_ois.readObject();
+				while(!isLoginSent()){}
+				msg = readObject();
 			} catch (ClassNotFoundException | IOException e) {
 				e.printStackTrace();
 				return "Error reading server message!";
 			}
 			
-			if(msg.getType() == 1 && msg.getLogin().compareTo(_name) == 0) {
+			if(msg.getType() == 1 && msg.getLogin().compareTo(getName()) == 0) {
 				setLoggedIn(true);
 			}
 			
-			if(msg.getType() == 2 && msg.getLogin().compareTo(_name) == 0) {
+			if(msg.getType() == 2 && msg.getLogin().compareTo(getName()) == 0) {
 				
 				setLoggedIn(false);
-				_loginSent = false;
+				setLoginSent(false);
 				
 				try {
-					_socket.close();
+					disconnect();
 				} catch (IOException e) {
 					e.printStackTrace();
 					return msg.toString() + "\nError disconnecting. Connection troubles.";
@@ -139,10 +201,10 @@ public class ChatClient {
 			
 			if(isLoggedIn()){
 				if("".compareTo(msgText) != 0){
-					Message msg = new Message(0, _name, msgText);
+					Message msg = new Message(0, getName(), msgText);
 					
 					try {
-						_oos.writeObject(msg);
+						writeObject(msg);
 					} catch (IOException e) {
 						e.printStackTrace();
 						return "Error sending message! Connection troubles!";

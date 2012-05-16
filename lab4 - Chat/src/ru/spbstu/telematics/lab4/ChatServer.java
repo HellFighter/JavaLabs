@@ -28,20 +28,8 @@ public class ChatServer {
 		_activityTable = new ActivityTable();
 	}
 	
-	public ExecutorService getPool() {
+	public synchronized ExecutorService getPool() {
 		return _pool;
-	}
-	
-	private void sendToAll(Message msg) {
-		for (Client clt : _activityTable) {
-			try {
-				clt.getObjectOutputStream().writeObject(msg);
-				clt.getObjectOutputStream().flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.out.println("Error writing object!");
-			}
-		}
 	}
 	
 	private void serve(Client client) {
@@ -61,7 +49,7 @@ public class ChatServer {
 				_activityTable.add(client);
 				System.out.println(firstMsg);
 			
-				sendToAll(firstMsg);
+				_activityTable.sendAll(firstMsg);
 
 			}
 			else{
@@ -99,7 +87,7 @@ public class ChatServer {
 					
 					System.out.println(msg);
 
-					sendToAll(msg);
+					_activityTable.sendAll(msg);
 					
 					break;
 					
@@ -121,7 +109,7 @@ public class ChatServer {
 					
 					System.out.println(msg);
 					
-					sendToAll(msg);
+					_activityTable.sendAll(msg);
 					
 					System.out.println("removing: " + _activityTable.remove(client));
 					
