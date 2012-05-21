@@ -45,11 +45,20 @@ public class ChatServer {
 		if(firstMsg.getType() == 1) {
 			
 			if(_accountTable.find(firstMsg.getLogin(), firstMsg.getPassword()) >= 0){
+				
+				if(!_activityTable.findName(firstMsg.getLogin())){
 			
-				_activityTable.add(client);
-				System.out.println(firstMsg);
-			
-				_activityTable.sendAll(firstMsg);
+					_activityTable.add(client, firstMsg.getLogin());
+					System.out.println(firstMsg);
+				
+					_activityTable.sendAll(firstMsg);
+				
+				}
+				else{
+					System.out.println(firstMsg.getLogin() + " is already logged in by another client!");
+					_activityTable.writeObject(client, new Message(0, "Notyfication!", "You are already logged in by another client!"));
+					return;
+				}
 
 			}
 			else{
@@ -94,14 +103,15 @@ public class ChatServer {
 				case 1:	//Relogin message
 					
 					System.out.println(msg.getLogin() + " already logged in!");
-					Message ntfyMsg = new Message(0, "Notyfication!", "Yiu are already logged in!");
+					Message ntfyMsg = new Message(0, "Notyfication!", "You are already logged in!");
 					
-					try {
-						client.getObjectOutputStream().writeObject(ntfyMsg);
-					} catch (IOException e) {
-						e.printStackTrace();
-						System.out.println("Error writing object!");
-					}
+//					try {
+//						client.getObjectOutputStream().writeObject(ntfyMsg);
+						_activityTable.writeObject(client, ntfyMsg);
+//					} catch (IOException e) {
+//						e.printStackTrace();
+//						System.out.println("Error writing object!");
+//					}
 										
 					break;
 					
@@ -111,7 +121,7 @@ public class ChatServer {
 					
 					_activityTable.sendAll(msg);
 					
-					System.out.println("removing: " + _activityTable.remove(client));
+					System.out.println("removing: " + _activityTable.remove(client, msg.getLogin()));
 					
 					brk = true;
 					
@@ -121,12 +131,13 @@ public class ChatServer {
 					
 					System.out.println(msg);
 					Message errorMsg = new Message(0, "Error!", "Invalid message type!");
-				try {
-					client.getObjectOutputStream().writeObject(errorMsg);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.out.println("Error writing object!");
-				}
+//				try {
+//					client.getObjectOutputStream().writeObject(errorMsg);
+					_activityTable.writeObject(client, errorMsg);
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//					System.out.println("Error writing object!");
+//				}
 					
 					break;
 				
@@ -169,7 +180,7 @@ public class ChatServer {
 								server.serve(client);
 							} catch (Exception e) {
 								e.printStackTrace();
-								server._activityTable.remove(client);
+								server._activityTable.remove(client, "");
 							}
 							
 						} //run
