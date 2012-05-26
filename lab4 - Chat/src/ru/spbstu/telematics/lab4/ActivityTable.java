@@ -39,6 +39,17 @@ public class ActivityTable implements Iterable<Client>{
 	
 	public boolean remove(Client entry, String cName) {
 //		return _clients.remove(entry);
+		if("".compareTo(cName) == 0){ // Unexpected disconnection (unknown cName)
+			int index = _clients.indexOf(entry);
+			if(index >= 0){
+				_clients.remove(index);
+				_cNames.remove(index);
+				return true;
+			}
+			else
+				return false;
+		}
+		
 		if(_clients.remove(entry)){
 			_cNames.remove(cName);
 			return true;
